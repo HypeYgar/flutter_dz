@@ -6,9 +6,7 @@ import 'package:intl/intl.dart';
 
 void main() {
   runApp(const MyApp());
-
-
-
+  
 }
 
 class MyApp extends StatelessWidget {
@@ -53,7 +51,7 @@ class _GroupListPageState extends State<GroupListPage> {
     });
 
     final url = Uri.parse(
-        'http://localhost:5000/api/search?term=$searchTerm&type=$searchType');
+        'http://62.60.148.168:5000/api/search?term=$searchTerm&type=$searchType');
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
@@ -79,6 +77,20 @@ class _GroupListPageState extends State<GroupListPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Поиск групп и преподавателей'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.bug_report),
+            onPressed: () {
+              // Переход на страницу с отладочной информацией
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const DebugPage(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -179,7 +191,7 @@ class _GroupSchedulePageState extends State<GroupSchedulePage> {
     final end = DateFormat("yyyy-MM-dd'T'HH:mm:ss").format(DateTime.now().add(Duration(days: 7)));
 
     final url = Uri.parse(
-        'http://localhost:5000/api/schedule/group/${widget.groupId}?start=$start&finish=$end&lng=1');
+        'http://62.60.148.168:5000/api/schedule/group/${widget.groupId}?start=$start&finish=$end&lng=1');
 
     try {
       final response = await http.get(url);
@@ -273,7 +285,7 @@ class _PersonSchedulePageState extends State<PersonSchedulePage> {
     final end = DateFormat("yyyy-MM-dd'T'HH:mm:ss").format(DateTime.now().add(Duration(days: 7)));
 
     final url = Uri.parse(
-        'http://localhost:5000/api/schedule/person/${widget.personId}?start=$start&finish=$end&lng=1');
+        'http://62.60.148.168:5000/api/schedule/person/${widget.personId}?start=$start&finish=$end&lng=1');
 
     try {
       final response = await http.get(url);
@@ -346,6 +358,78 @@ class _PersonSchedulePageState extends State<PersonSchedulePage> {
             },
           );
         },
+      ),
+    );
+  }
+}
+class DebugPage extends StatefulWidget {
+  const DebugPage({super.key});
+
+  @override
+  State<DebugPage> createState() => _DebugPageState();
+}
+
+class _DebugPageState extends State<DebugPage> {
+  String debugResponse = '';
+  bool isLoading = false;
+
+  Future<void> fetchDebugData() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    final url = Uri.parse(
+        'http://62.60.148.168:5000/api/schedule/person/27a36f1c-b6e2-11e6-a794-005056bf7de8?start=2024-12-18&finish=2024-12-25');
+
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        setState(() {
+          debugResponse = jsonEncode(jsonDecode(response.body));
+        });
+      } else {
+        setState(() {
+          debugResponse = 'Ошибка: ${response.statusCode}';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        debugResponse = 'Ошибка запроса: $e';
+      });
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Debug Page'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            ElevatedButton(
+              onPressed: fetchDebugData,
+              child: const Text('Отправить Debug-запрос'),
+            ),
+            const SizedBox(height: 16),
+            isLoading
+                ? const CircularProgressIndicator()
+                : Expanded(
+              child: SingleChildScrollView(
+                child: Text(
+                  debugResponse,
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
